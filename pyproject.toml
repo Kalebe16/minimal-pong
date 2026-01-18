@@ -1,0 +1,71 @@
+#############
+## Package ##
+#############
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minimal-pong"
+dynamic = ["version"]
+description = "A minimal pong game"
+authors = [{ name = "Kalebe Chimanski de Almeida", email = "kalebe.chi.almeida@gmail.com" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+  "pygame-ce>=2.5,<3",
+]
+keywords = ["minimal_pong", "minimal-pong", "pong", "game", "arcade"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Games/Entertainment",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Natural Language :: English",
+]
+
+[project.urls]
+Homepage = "https://github.com/Kalebe16/minimal-pong"
+Repository = "https://github.com/Kalebe16/minimal-pong"
+Issues = "https://github.com/Kalebe16/minimal-pong/issues"
+Documentation = "https://github.com/Kalebe16/minimal-pong/blob/main/README.md"
+
+[project.scripts]
+minimal-pong = "minimal_pong.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "minimal_pong.__about__.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["minimal_pong*"]
+
+[tool.setuptools.package-data]
+minimal_pong = ["audios/**/*"]
+
+
+##########
+## Ruff ##
+##########
+[tool.ruff]
+line-length = 79
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP"]
+ignore = ["E501", "B006", "UP037"]
+
+[tool.ruff.format]
+quote-style = "single"
