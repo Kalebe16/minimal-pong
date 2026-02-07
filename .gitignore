@@ -1,0 +1,9 @@
+venv/
+build/
+dist/
+pyenv.cfg
+.vscode/
+*.egg-info
+*.spec
+**/__pycache__/
+DEV_NOTES.md
