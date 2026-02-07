@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+
+env:
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  verify-version:
+    name: Verify version
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref_name, 'release')
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Ensure version is not already published on PyPi
+        run: |
+          VERSION=$(cat ./minimal_pong/__about__.py | grep "__version__" | grep -Eo "[0-9]+\.[0-9]+(\.[0-9]+)?" | head -n1)
+          if curl -sSf -o /dev/null "https://pypi.org/pypi/minimal_pong/${VERSION}/json"; then
+            echo "Version ${VERSION} already exists on PyPI"
+            exit 1
+          else
+            echo "Version ${VERSION} does not exist on PyPI yet"
+          fi
+
+  lint-format:
+    name: Linting && formatting checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r ./requirements.dev.txt
+
+      - name: Check lint
+        run: |
+          ruff format --check .
+          ruff check .
+
+  build-pkg:
+    name: Build package
+    runs-on: ubuntu-latest
+    needs: [lint-format]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r ./requirements.dev.txt
+
+      - name: Build package
+        run: |
+          python -m build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal_pong
+          path: dist/minimal_pong*
+
+  smoke-test:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    needs: [build-pkg]
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download built package
+        uses: actions/download-artifact@v4
+        with:
+          name: minimal_pong
+          path: dist
+
+      - name: Install package
+        run: |
+          pip install --upgrade pip
+          pip install dist/*.tar.gz
+
+      - name: Run smoke test
+        run: |
+          # Run the game for 3 seconds to ensure it starts correctly.
+          # `timeout` exits with code 124 when the time limit is reached,
+          # which is expected for this smoke test.
+          timeout 3s python -m minimal_pong || test $? -eq 124
+        env:
+          SDL_AUDIODRIVER: dummy
+          SDL_VIDEODRIVER: dummy
+
+  publish-pkg:
+    name: Publish package on PyPi
+    runs-on: ubuntu-latest
+    needs: [smoke-test]
+    if: github.ref_name == 'main'
+    permissions:
+      id-token: write
+      contents: read
+    environment:
+      name: pypi-publish
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: minimal_pong
+          path: dist
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: false
